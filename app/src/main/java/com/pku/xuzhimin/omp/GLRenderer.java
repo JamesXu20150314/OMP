@@ -37,6 +37,18 @@ public class GLRenderer implements GLSurfaceView.Renderer {
             0,4,1
     };
     private ShortBuffer indexBuffer;
+    private int textureId;
+
+    private final float[] textureVertexData = {
+            0.5f,0.5f,
+            1f,0f,
+            0f,0f,
+            0f,1f,
+            1f,1f
+    };
+    private FloatBuffer textureVertexBuffer;
+    private int uTextureSamplerHandle;
+    private int aTextureCoordHandle;
 
     public GLRenderer(Context context) {
         this.context = context;
@@ -51,6 +63,12 @@ public class GLRenderer implements GLSurfaceView.Renderer {
                 .asShortBuffer()
                 .put(indexData);
         indexBuffer.position(0);
+
+        textureVertexBuffer = ByteBuffer.allocateDirect(textureVertexData.length * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer()
+                .put(textureVertexData);
+        textureVertexBuffer.position(0);
     }
 
     @Override
@@ -60,6 +78,11 @@ public class GLRenderer implements GLSurfaceView.Renderer {
         programId = ShaderUtils.createProgram(vertexShader,fragmentShader);
         aPositionHandle = GLES20.glGetAttribLocation(programId,"aPosition");
         uMatrixHandle = GLES20.glGetUniformLocation(programId,"uMatrix");
+
+        textureId=TextureHelper.loadTexture(context,R.raw.demo);
+
+        uTextureSamplerHandle=GLES20.glGetUniformLocation(programId,"sTexture");
+        aTextureCoordHandle=GLES20.glGetAttribLocation(programId,"aTexCoord");
     }
 
     @Override
@@ -80,7 +103,15 @@ public class GLRenderer implements GLSurfaceView.Renderer {
         GLES20.glEnableVertexAttribArray(aPositionHandle);
         GLES20.glVertexAttribPointer(aPositionHandle, 3, GLES20.GL_FLOAT, false,
                 12, vertexBuffer);
-        //GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3);
+
+        GLES20.glEnableVertexAttribArray(aTextureCoordHandle);
+        GLES20.glVertexAttribPointer(aTextureCoordHandle,2,GLES20.GL_FLOAT,false,8,textureVertexBuffer);
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,textureId);
+
+        GLES20.glUniform1i(uTextureSamplerHandle,0);
+
         GLES20.glDrawElements(GLES20.GL_TRIANGLES,indexData.length,GLES20.GL_UNSIGNED_SHORT,indexBuffer);
     }
 }
